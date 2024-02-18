@@ -14,7 +14,6 @@ Ops.Trigger=Ops.Trigger || {};
 Ops.Gl.Phong=Ops.Gl.Phong || {};
 Ops.Gl.Matrix=Ops.Gl.Matrix || {};
 Ops.Gl.Meshes=Ops.Gl.Meshes || {};
-Ops.Gl.Textures=Ops.Gl.Textures || {};
 Ops.Devices.Mouse=Ops.Devices.Mouse || {};
 Ops.Gl.ImageCompose=Ops.Gl.ImageCompose || {};
 Ops.Gl.ShaderEffects=Ops.Gl.ShaderEffects || {};
@@ -3047,262 +3046,6 @@ CABLES.OPS["736d3d0e-c920-449e-ade0-f5ca6018fb5c"]={f:Ops.Anim.SineAnim,objName:
 
 // **************************************************************
 // 
-// Ops.Gl.Texture_v2
-// 
-// **************************************************************
-
-Ops.Gl.Texture_v2 = function()
-{
-CABLES.Op.apply(this,arguments);
-const op=this;
-const attachments=op.attachments={};
-const
-    filename = op.inUrl("File", [".jpg", ".png", ".webp", ".jpeg", ".avif"]),
-    tfilter = op.inSwitch("Filter", ["nearest", "linear", "mipmap"]),
-    wrap = op.inValueSelect("Wrap", ["repeat", "mirrored repeat", "clamp to edge"], "clamp to edge"),
-    aniso = op.inSwitch("Anisotropic", ["0", "1", "2", "4", "8", "16"], "0"),
-    dataFrmt = op.inSwitch("Data Format", ["R", "RG", "RGB", "RGBA", "SRGBA"], "RGBA"),
-    flip = op.inValueBool("Flip", false),
-    unpackAlpha = op.inValueBool("Pre Multiplied Alpha", false),
-    active = op.inValueBool("Active", true),
-    inFreeMemory = op.inBool("Save Memory", true),
-    textureOut = op.outTexture("Texture"),
-    addCacheBust = op.inBool("Add Cachebuster", true),
-    width = op.outNumber("Width"),
-    height = op.outNumber("Height"),
-    ratio = op.outNumber("Aspect Ratio"),
-    loaded = op.outNumber("Loaded", false),
-    loading = op.outNumber("Loading", false);
-
-const cgl = op.patch.cgl;
-
-op.toWorkPortsNeedToBeLinked(textureOut);
-op.setPortGroup("Size", [width, height]);
-
-let loadedFilename = null;
-let loadingId = null;
-let tex = null;
-let cgl_filter = CGL.Texture.FILTER_MIPMAP;
-let cgl_wrap = CGL.Texture.WRAP_REPEAT;
-let cgl_aniso = 0;
-let timedLoader = 0;
-
-unpackAlpha.setUiAttribs({ "hidePort": true });
-unpackAlpha.onChange =
-    filename.onChange =
-    dataFrmt.onChange =
-    addCacheBust.onChange =
-    flip.onChange = reloadSoon;
-aniso.onChange = tfilter.onChange = onFilterChange;
-wrap.onChange = onWrapChange;
-
-tfilter.set("mipmap");
-wrap.set("repeat");
-
-textureOut.set(CGL.Texture.getEmptyTexture(cgl));
-
-active.onChange = function ()
-{
-    if (active.get())
-    {
-        if (loadedFilename != filename.get() || !tex) reloadSoon();
-        else textureOut.set(tex);
-    }
-    else
-    {
-        textureOut.set(CGL.Texture.getEmptyTexture(cgl));
-        width.set(CGL.Texture.getEmptyTexture(cgl).width);
-        height.set(CGL.Texture.getEmptyTexture(cgl).height);
-        if (tex)tex.delete();
-        op.setUiAttrib({ "extendTitle": "" });
-        tex = null;
-    }
-};
-
-const setTempTexture = function ()
-{
-    const t = CGL.Texture.getTempTexture(cgl);
-    textureOut.set(t);
-};
-
-function reloadSoon(nocache)
-{
-    clearTimeout(timedLoader);
-    timedLoader = setTimeout(function ()
-    {
-        realReload(nocache);
-    }, 30);
-}
-
-function getPixelFormat()
-{
-    if (dataFrmt.get() == "R") return CGL.Texture.PFORMATSTR_R8UB;
-    if (dataFrmt.get() == "RG") return CGL.Texture.PFORMATSTR_RG8UB;
-    if (dataFrmt.get() == "RGB") return CGL.Texture.PFORMATSTR_RGB8UB;
-    if (dataFrmt.get() == "SRGBA") return CGL.Texture.PFORMATSTR_SRGBA8;
-
-    return CGL.Texture.PFORMATSTR_RGBA8UB;
-}
-
-function realReload(nocache)
-{
-    op.checkMainloopExists();
-    if (!active.get()) return;
-    // if (filename.get() === null) return;
-    if (loadingId)loadingId = cgl.patch.loading.finished(loadingId);
-    loadingId = cgl.patch.loading.start("textureOp", filename.get(), op);
-
-    let url = op.patch.getFilePath(String(filename.get()));
-
-    if ((addCacheBust.get() || nocache) && CABLES.UI)url = CABLES.cacheBust(url);
-
-    if (String(filename.get()).indexOf("data:") == 0) url = filename.get();
-
-    let needsRefresh = false;
-    if (loadedFilename != filename.get()) needsRefresh = true;
-    loadedFilename = filename.get();
-
-    if ((filename.get() && filename.get().length > 1))
-    {
-        loaded.set(false);
-        loading.set(true);
-
-        const fileToLoad = filename.get();
-
-        op.setUiAttrib({ "extendTitle": CABLES.basename(url) });
-        if (needsRefresh) op.refreshParams();
-
-        cgl.patch.loading.addAssetLoadingTask(() =>
-        {
-            op.setUiError("urlerror", null);
-            CGL.Texture.load(cgl, url, function (err, newTex)
-            {
-                cgl.checkFrameStarted("texture inittexture");
-
-                if (filename.get() != fileToLoad)
-                {
-                    cgl.patch.loading.finished(loadingId);
-                    loadingId = null;
-                    return;
-                }
-
-                if (tex)tex.delete();
-
-                if (err)
-                {
-                    const t = CGL.Texture.getErrorTexture(cgl);
-                    textureOut.setRef(t);
-
-                    op.setUiError("urlerror", "could not load texture: \"" + filename.get() + "\"", 2);
-                    cgl.patch.loading.finished(loadingId);
-                    loadingId = null;
-                    return;
-                }
-
-                // textureOut.setRef(newTex);
-
-                width.set(newTex.width);
-                height.set(newTex.height);
-                ratio.set(newTex.width / newTex.height);
-
-                // if (!newTex.isPowerOfTwo()) op.setUiError("npot", "Texture dimensions not power of two! - Texture filtering will not work in WebGL 1.", 0);
-                // else op.setUiError("npot", null);
-
-                tex = newTex;
-                // textureOut.set(null);
-                textureOut.setRef(tex);
-
-                loading.set(false);
-                loaded.set(true);
-
-                if (inFreeMemory.get()) tex.image = null;
-
-                if (loadingId)
-                {
-                    cgl.patch.loading.finished(loadingId);
-                    loadingId = null;
-                }
-                op.checkMainloopExists();
-            }, {
-                "anisotropic": cgl_aniso,
-                "wrap": cgl_wrap,
-                "flip": flip.get(),
-                "unpackAlpha": unpackAlpha.get(),
-                "pixelFormat": getPixelFormat(),
-                "filter": cgl_filter
-            });
-
-            op.checkMainloopExists();
-        });
-    }
-    else
-    {
-        cgl.patch.loading.finished(loadingId);
-        loadingId = null;
-        setTempTexture();
-    }
-}
-
-function onFilterChange()
-{
-    if (tfilter.get() == "nearest") cgl_filter = CGL.Texture.FILTER_NEAREST;
-    else if (tfilter.get() == "linear") cgl_filter = CGL.Texture.FILTER_LINEAR;
-    else if (tfilter.get() == "mipmap") cgl_filter = CGL.Texture.FILTER_MIPMAP;
-    else if (tfilter.get() == "Anisotropic") cgl_filter = CGL.Texture.FILTER_ANISOTROPIC;
-
-    aniso.setUiAttribs({ "greyout": cgl_filter != CGL.Texture.FILTER_MIPMAP });
-
-    cgl_aniso = parseFloat(aniso.get());
-
-    reloadSoon();
-}
-
-function onWrapChange()
-{
-    if (wrap.get() == "repeat") cgl_wrap = CGL.Texture.WRAP_REPEAT;
-    if (wrap.get() == "mirrored repeat") cgl_wrap = CGL.Texture.WRAP_MIRRORED_REPEAT;
-    if (wrap.get() == "clamp to edge") cgl_wrap = CGL.Texture.WRAP_CLAMP_TO_EDGE;
-
-    reloadSoon();
-}
-
-op.onFileChanged = function (fn)
-{
-    if (filename.get() && filename.get().indexOf(fn) > -1)
-    {
-        textureOut.set(CGL.Texture.getEmptyTexture(op.patch.cgl));
-        textureOut.set(CGL.Texture.getTempTexture(cgl));
-        realReload(true);
-    }
-};
-
-// function testTexture()
-// {
-//     cgl.setTexture(0, tex.tex);
-
-//     const filter = cgl.gl.getTexParameter(cgl.gl.TEXTURE_2D, cgl.gl.TEXTURE_MIN_FILTER);
-//     const wrap = cgl.gl.getTexParameter(cgl.gl.TEXTURE_2D, cgl.gl.TEXTURE_WRAP_S);
-
-//     if (cgl_filter === CGL.Texture.FILTER_MIPMAP && filter != cgl.gl.LINEAR_MIPMAP_LINEAR) console.log("wrong texture filter!", filename.get());
-//     if (cgl_filter === CGL.Texture.FILTER_NEAREST && filter != cgl.gl.NEAREST) console.log("wrong texture filter!", filename.get());
-//     if (cgl_filter === CGL.Texture.FILTER_LINEAR && filter != cgl.gl.LINEAR) console.log("wrong texture filter!", filename.get());
-
-//     if (cgl_wrap === CGL.Texture.WRAP_REPEAT && wrap != cgl.gl.REPEAT) console.log("wrong texture wrap1!", filename.get());
-//     if (cgl_wrap === CGL.Texture.WRAP_MIRRORED_REPEAT && wrap != cgl.gl.MIRRORED_REPEAT) console.log("wrong texture wrap2!", filename.get());
-//     if (cgl_wrap === CGL.Texture.WRAP_CLAMP_TO_EDGE && wrap != cgl.gl.CLAMP_TO_EDGE) console.log("wrong texture wrap3!", filename.get());
-// }
-
-
-};
-
-Ops.Gl.Texture_v2.prototype = new CABLES.Op();
-CABLES.OPS["790f3702-9833-464e-8e37-6f0f813f7e16"]={f:Ops.Gl.Texture_v2,objName:"Ops.Gl.Texture_v2"};
-
-
-
-
-// **************************************************************
-// 
 // Ops.Gl.ImageCompose.BrightnessContrast
 // 
 // **************************************************************
@@ -3854,6 +3597,262 @@ render.onTriggered = function ()
 
 Ops.Gl.ImageCompose.RotateTexture_v2.prototype = new CABLES.Op();
 CABLES.OPS["20b8a2e6-2419-474b-98a4-71a5e3178631"]={f:Ops.Gl.ImageCompose.RotateTexture_v2,objName:"Ops.Gl.ImageCompose.RotateTexture_v2"};
+
+
+
+
+// **************************************************************
+// 
+// Ops.Gl.Texture_v2
+// 
+// **************************************************************
+
+Ops.Gl.Texture_v2 = function()
+{
+CABLES.Op.apply(this,arguments);
+const op=this;
+const attachments=op.attachments={};
+const
+    filename = op.inUrl("File", [".jpg", ".png", ".webp", ".jpeg", ".avif"]),
+    tfilter = op.inSwitch("Filter", ["nearest", "linear", "mipmap"]),
+    wrap = op.inValueSelect("Wrap", ["repeat", "mirrored repeat", "clamp to edge"], "clamp to edge"),
+    aniso = op.inSwitch("Anisotropic", ["0", "1", "2", "4", "8", "16"], "0"),
+    dataFrmt = op.inSwitch("Data Format", ["R", "RG", "RGB", "RGBA", "SRGBA"], "RGBA"),
+    flip = op.inValueBool("Flip", false),
+    unpackAlpha = op.inValueBool("Pre Multiplied Alpha", false),
+    active = op.inValueBool("Active", true),
+    inFreeMemory = op.inBool("Save Memory", true),
+    textureOut = op.outTexture("Texture"),
+    addCacheBust = op.inBool("Add Cachebuster", true),
+    width = op.outNumber("Width"),
+    height = op.outNumber("Height"),
+    ratio = op.outNumber("Aspect Ratio"),
+    loaded = op.outNumber("Loaded", false),
+    loading = op.outNumber("Loading", false);
+
+const cgl = op.patch.cgl;
+
+op.toWorkPortsNeedToBeLinked(textureOut);
+op.setPortGroup("Size", [width, height]);
+
+let loadedFilename = null;
+let loadingId = null;
+let tex = null;
+let cgl_filter = CGL.Texture.FILTER_MIPMAP;
+let cgl_wrap = CGL.Texture.WRAP_REPEAT;
+let cgl_aniso = 0;
+let timedLoader = 0;
+
+unpackAlpha.setUiAttribs({ "hidePort": true });
+unpackAlpha.onChange =
+    filename.onChange =
+    dataFrmt.onChange =
+    addCacheBust.onChange =
+    flip.onChange = reloadSoon;
+aniso.onChange = tfilter.onChange = onFilterChange;
+wrap.onChange = onWrapChange;
+
+tfilter.set("mipmap");
+wrap.set("repeat");
+
+textureOut.set(CGL.Texture.getEmptyTexture(cgl));
+
+active.onChange = function ()
+{
+    if (active.get())
+    {
+        if (loadedFilename != filename.get() || !tex) reloadSoon();
+        else textureOut.set(tex);
+    }
+    else
+    {
+        textureOut.set(CGL.Texture.getEmptyTexture(cgl));
+        width.set(CGL.Texture.getEmptyTexture(cgl).width);
+        height.set(CGL.Texture.getEmptyTexture(cgl).height);
+        if (tex)tex.delete();
+        op.setUiAttrib({ "extendTitle": "" });
+        tex = null;
+    }
+};
+
+const setTempTexture = function ()
+{
+    const t = CGL.Texture.getTempTexture(cgl);
+    textureOut.set(t);
+};
+
+function reloadSoon(nocache)
+{
+    clearTimeout(timedLoader);
+    timedLoader = setTimeout(function ()
+    {
+        realReload(nocache);
+    }, 30);
+}
+
+function getPixelFormat()
+{
+    if (dataFrmt.get() == "R") return CGL.Texture.PFORMATSTR_R8UB;
+    if (dataFrmt.get() == "RG") return CGL.Texture.PFORMATSTR_RG8UB;
+    if (dataFrmt.get() == "RGB") return CGL.Texture.PFORMATSTR_RGB8UB;
+    if (dataFrmt.get() == "SRGBA") return CGL.Texture.PFORMATSTR_SRGBA8;
+
+    return CGL.Texture.PFORMATSTR_RGBA8UB;
+}
+
+function realReload(nocache)
+{
+    op.checkMainloopExists();
+    if (!active.get()) return;
+    // if (filename.get() === null) return;
+    if (loadingId)loadingId = cgl.patch.loading.finished(loadingId);
+    loadingId = cgl.patch.loading.start("textureOp", filename.get(), op);
+
+    let url = op.patch.getFilePath(String(filename.get()));
+
+    if ((addCacheBust.get() || nocache) && CABLES.UI)url = CABLES.cacheBust(url);
+
+    if (String(filename.get()).indexOf("data:") == 0) url = filename.get();
+
+    let needsRefresh = false;
+    if (loadedFilename != filename.get()) needsRefresh = true;
+    loadedFilename = filename.get();
+
+    if ((filename.get() && filename.get().length > 1))
+    {
+        loaded.set(false);
+        loading.set(true);
+
+        const fileToLoad = filename.get();
+
+        op.setUiAttrib({ "extendTitle": CABLES.basename(url) });
+        if (needsRefresh) op.refreshParams();
+
+        cgl.patch.loading.addAssetLoadingTask(() =>
+        {
+            op.setUiError("urlerror", null);
+            CGL.Texture.load(cgl, url, function (err, newTex)
+            {
+                cgl.checkFrameStarted("texture inittexture");
+
+                if (filename.get() != fileToLoad)
+                {
+                    cgl.patch.loading.finished(loadingId);
+                    loadingId = null;
+                    return;
+                }
+
+                if (tex)tex.delete();
+
+                if (err)
+                {
+                    const t = CGL.Texture.getErrorTexture(cgl);
+                    textureOut.setRef(t);
+
+                    op.setUiError("urlerror", "could not load texture: \"" + filename.get() + "\"", 2);
+                    cgl.patch.loading.finished(loadingId);
+                    loadingId = null;
+                    return;
+                }
+
+                // textureOut.setRef(newTex);
+
+                width.set(newTex.width);
+                height.set(newTex.height);
+                ratio.set(newTex.width / newTex.height);
+
+                // if (!newTex.isPowerOfTwo()) op.setUiError("npot", "Texture dimensions not power of two! - Texture filtering will not work in WebGL 1.", 0);
+                // else op.setUiError("npot", null);
+
+                tex = newTex;
+                // textureOut.set(null);
+                textureOut.setRef(tex);
+
+                loading.set(false);
+                loaded.set(true);
+
+                if (inFreeMemory.get()) tex.image = null;
+
+                if (loadingId)
+                {
+                    cgl.patch.loading.finished(loadingId);
+                    loadingId = null;
+                }
+                op.checkMainloopExists();
+            }, {
+                "anisotropic": cgl_aniso,
+                "wrap": cgl_wrap,
+                "flip": flip.get(),
+                "unpackAlpha": unpackAlpha.get(),
+                "pixelFormat": getPixelFormat(),
+                "filter": cgl_filter
+            });
+
+            op.checkMainloopExists();
+        });
+    }
+    else
+    {
+        cgl.patch.loading.finished(loadingId);
+        loadingId = null;
+        setTempTexture();
+    }
+}
+
+function onFilterChange()
+{
+    if (tfilter.get() == "nearest") cgl_filter = CGL.Texture.FILTER_NEAREST;
+    else if (tfilter.get() == "linear") cgl_filter = CGL.Texture.FILTER_LINEAR;
+    else if (tfilter.get() == "mipmap") cgl_filter = CGL.Texture.FILTER_MIPMAP;
+    else if (tfilter.get() == "Anisotropic") cgl_filter = CGL.Texture.FILTER_ANISOTROPIC;
+
+    aniso.setUiAttribs({ "greyout": cgl_filter != CGL.Texture.FILTER_MIPMAP });
+
+    cgl_aniso = parseFloat(aniso.get());
+
+    reloadSoon();
+}
+
+function onWrapChange()
+{
+    if (wrap.get() == "repeat") cgl_wrap = CGL.Texture.WRAP_REPEAT;
+    if (wrap.get() == "mirrored repeat") cgl_wrap = CGL.Texture.WRAP_MIRRORED_REPEAT;
+    if (wrap.get() == "clamp to edge") cgl_wrap = CGL.Texture.WRAP_CLAMP_TO_EDGE;
+
+    reloadSoon();
+}
+
+op.onFileChanged = function (fn)
+{
+    if (filename.get() && filename.get().indexOf(fn) > -1)
+    {
+        textureOut.set(CGL.Texture.getEmptyTexture(op.patch.cgl));
+        textureOut.set(CGL.Texture.getTempTexture(cgl));
+        realReload(true);
+    }
+};
+
+// function testTexture()
+// {
+//     cgl.setTexture(0, tex.tex);
+
+//     const filter = cgl.gl.getTexParameter(cgl.gl.TEXTURE_2D, cgl.gl.TEXTURE_MIN_FILTER);
+//     const wrap = cgl.gl.getTexParameter(cgl.gl.TEXTURE_2D, cgl.gl.TEXTURE_WRAP_S);
+
+//     if (cgl_filter === CGL.Texture.FILTER_MIPMAP && filter != cgl.gl.LINEAR_MIPMAP_LINEAR) console.log("wrong texture filter!", filename.get());
+//     if (cgl_filter === CGL.Texture.FILTER_NEAREST && filter != cgl.gl.NEAREST) console.log("wrong texture filter!", filename.get());
+//     if (cgl_filter === CGL.Texture.FILTER_LINEAR && filter != cgl.gl.LINEAR) console.log("wrong texture filter!", filename.get());
+
+//     if (cgl_wrap === CGL.Texture.WRAP_REPEAT && wrap != cgl.gl.REPEAT) console.log("wrong texture wrap1!", filename.get());
+//     if (cgl_wrap === CGL.Texture.WRAP_MIRRORED_REPEAT && wrap != cgl.gl.MIRRORED_REPEAT) console.log("wrong texture wrap2!", filename.get());
+//     if (cgl_wrap === CGL.Texture.WRAP_CLAMP_TO_EDGE && wrap != cgl.gl.CLAMP_TO_EDGE) console.log("wrong texture wrap3!", filename.get());
+// }
+
+
+};
+
+Ops.Gl.Texture_v2.prototype = new CABLES.Op();
+CABLES.OPS["790f3702-9833-464e-8e37-6f0f813f7e16"]={f:Ops.Gl.Texture_v2,objName:"Ops.Gl.Texture_v2"};
 
 
 
@@ -7308,38 +7307,109 @@ CABLES.OPS["5677b5b5-753a-4fbf-9e91-64c81ec68a2f"]={f:Ops.Anim.Smooth,objName:"O
 
 // **************************************************************
 // 
-// Ops.Gl.Textures.EmptyTexture
+// Ops.Gl.ImageCompose.Clarity
 // 
 // **************************************************************
 
-Ops.Gl.Textures.EmptyTexture = function()
+Ops.Gl.ImageCompose.Clarity = function()
 {
 CABLES.Op.apply(this,arguments);
 const op=this;
-const attachments=op.attachments={};
-const width = op.inValue("width", 8);
-const height = op.inValue("height", 8);
-const textureOut = op.outTexture("texture");
+const attachments=op.attachments={"clarity_frag":"IN vec2 texCoord;\nUNI sampler2D tex;\nUNI float amount;\nUNI float pX,pY;\n\nvec3 desaturate(vec4 color)\n{\n    vec3 c= vec3(dot(vec3(0.2126,0.7152,0.0722), color.rgb));\n    return c;\n}\n\nvoid main()\n{\n    vec4 col=texture(tex,texCoord);\n\n    vec3 gray=desaturate(col);\n    vec3 m=smoothstep(0.2,0.5,gray)*smoothstep(0.75,0.5,gray);\n    vec4 col2=vec4(1.0);\n\n    col2.rgb = ((col.rgb - 0.5) * max(( vec3(amount)*m+0.5)*2.0, 0.0))+0.5;\n\n    outColor= col2;\n}\n\n\n",};
+const render = op.inTrigger("Render");
+const trigger = op.outTrigger("Trigger");
+const amount = op.inFloat("amount", 0.5);
 
 const cgl = op.patch.cgl;
-const tex = new CGL.Texture(cgl);
+const shader = new CGL.Shader(cgl, op.name, op);
 
-width.onChange = sizeChanged;
-height.onChange = sizeChanged;
+shader.setSource(shader.getDefaultVertexShader(), attachments.clarity_frag);
+const textureUniform = new CGL.Uniform(shader, "t", "tex", 0);
+const amountUniform = new CGL.Uniform(shader, "f", "amount", amount);
 
-sizeChanged();
-
-function sizeChanged()
+render.onTriggered = function ()
 {
-    tex.setSize(width.get(), height.get());
-    textureOut.set(tex);
-}
+    if (!CGL.TextureEffect.checkOpInEffect(op)) return;
+
+    cgl.pushShader(shader);
+    cgl.currentTextureEffect.bind();
+
+    cgl.setTexture(0, cgl.currentTextureEffect.getCurrentSourceTexture().tex);
+
+    cgl.currentTextureEffect.finish();
+    cgl.popShader();
+
+    trigger.trigger();
+};
 
 
 };
 
-Ops.Gl.Textures.EmptyTexture.prototype = new CABLES.Op();
-CABLES.OPS["fc124913-0916-4f5c-83e0-702ddf66420c"]={f:Ops.Gl.Textures.EmptyTexture,objName:"Ops.Gl.Textures.EmptyTexture"};
+Ops.Gl.ImageCompose.Clarity.prototype = new CABLES.Op();
+CABLES.OPS["37d66c32-5594-4509-bba0-0ba2cbb706d8"]={f:Ops.Gl.ImageCompose.Clarity,objName:"Ops.Gl.ImageCompose.Clarity"};
+
+
+
+
+// **************************************************************
+// 
+// Ops.Gl.ImageCompose.EdgeDetection_v4
+// 
+// **************************************************************
+
+Ops.Gl.ImageCompose.EdgeDetection_v4 = function()
+{
+CABLES.Op.apply(this,arguments);
+const op=this;
+const attachments=op.attachments={"edgedetect_frag":"IN vec2 texCoord;\nUNI sampler2D tex;\nUNI float amount;\nUNI float width;\nUNI float strength;\nUNI float texWidth;\nUNI float texHeight;\nUNI float mulColor;\n\nconst vec4 lumcoeff = vec4(0.299,0.587,0.114, 0.);\n\nvec3 desaturate(vec3 color)\n{\n    return vec3(dot(vec3(0.2126,0.7152,0.0722), color));\n}\n\n{{CGL.BLENDMODES3}}\n\nvoid main()\n{\n    // vec4 col=vec4(1.0,0.0,0.0,1.0);\n\n    // float pixelX=0.27/texWidth;\n    // float pixelY=0.27/texHeight;\n    float pixelX=(width+0.01)*4.0/texWidth;\n    float pixelY=(width+0.01)*4.0/texHeight;\n\nvec2 tc=texCoord;\n// #ifdef OFFSETPIXEL\n    tc.x+=1.0/texWidth*0.5;\n    tc.y+=1.0/texHeight*0.5;\n// #endif\n    // col=texture(tex,texCoord);\n\n    float count=1.0;\n    vec4 base=texture(tex,texCoord);\n\n\tvec4 horizEdge = vec4( 0.0 );\n\thorizEdge -= texture( tex, vec2( tc.x - pixelX, tc.y - pixelY ) ) * 1.0;\n\thorizEdge -= texture( tex, vec2( tc.x - pixelX, tc.y     ) ) * 2.0;\n\thorizEdge -= texture( tex, vec2( tc.x - pixelX, tc.y + pixelY ) ) * 1.0;\n\thorizEdge += texture( tex, vec2( tc.x + pixelX, tc.y - pixelY ) ) * 1.0;\n\thorizEdge += texture( tex, vec2( tc.x + pixelX, tc.y     ) ) * 2.0;\n\thorizEdge += texture( tex, vec2( tc.x + pixelX, tc.y + pixelY ) ) * 1.0;\n\tvec4 vertEdge = vec4( 0.0 );\n\tvertEdge -= texture( tex, vec2( tc.x - pixelX, tc.y - pixelY ) ) * 1.0;\n\tvertEdge -= texture( tex, vec2( tc.x    , tc.y - pixelY ) ) * 2.0;\n\tvertEdge -= texture( tex, vec2( tc.x + pixelX, tc.y - pixelY ) ) * 1.0;\n\tvertEdge += texture( tex, vec2( tc.x - pixelX, tc.y + pixelY ) ) * 1.0;\n\tvertEdge += texture( tex, vec2( tc.x    , tc.y + pixelY ) ) * 2.0;\n\tvertEdge += texture( tex, vec2( tc.x + pixelX, tc.y + pixelY ) ) * 1.0;\n\n\thorizEdge*=base.a;\n\tvertEdge*=base.a;\n\n\n\tvec3 edge = sqrt((horizEdge.rgb/count * horizEdge.rgb/count) + (vertEdge.rgb/count * vertEdge.rgb/count));\n\n    edge=desaturate(edge);\n    edge*=strength;\n\n    if(mulColor>0.0) edge*=texture( tex, texCoord ).rgb*mulColor*4.0;\n    edge=max(min(edge,1.0),0.0);\n\n    //blend section\n    vec4 col=vec4(edge,base.a);\n\n    outColor=cgl_blendPixel(base,col,amount*base.a);\n}\n\n",};
+const
+    render = op.inTrigger("Render"),
+    blendMode = CGL.TextureEffect.AddBlendSelect(op, "Blend Mode", "normal"),
+    amount = op.inValueSlider("Amount", 1),
+    strength = op.inFloat("Strength", 4.0),
+    width = op.inValueSlider("Width", 0.1),
+    mulColor = op.inValueSlider("Mul Color", 0),
+    trigger = op.outTrigger("Trigger");
+
+const cgl = op.patch.cgl;
+const shader = new CGL.Shader(cgl, op.name, op);
+
+shader.setSource(shader.getDefaultVertexShader(), attachments.edgedetect_frag);
+
+const
+    textureUniform = new CGL.Uniform(shader, "t", "tex", 0),
+    amountUniform = new CGL.Uniform(shader, "f", "amount", amount),
+    strengthUniform = new CGL.Uniform(shader, "f", "strength", strength),
+    widthUniform = new CGL.Uniform(shader, "f", "width", width),
+    uniWidth = new CGL.Uniform(shader, "f", "texWidth", 128),
+    uniHeight = new CGL.Uniform(shader, "f", "texHeight", 128),
+    uniMulColor = new CGL.Uniform(shader, "f", "mulColor", mulColor);
+
+CGL.TextureEffect.setupBlending(op, shader, blendMode, amount);
+
+render.onTriggered = function ()
+{
+    if (!CGL.TextureEffect.checkOpInEffect(op, 3)) return;
+
+    cgl.pushShader(shader);
+    cgl.currentTextureEffect.bind();
+
+    cgl.setTexture(0, cgl.currentTextureEffect.getCurrentSourceTexture().tex);
+
+    uniWidth.setValue(cgl.currentTextureEffect.getCurrentSourceTexture().width);
+    uniHeight.setValue(cgl.currentTextureEffect.getCurrentSourceTexture().height);
+
+    cgl.currentTextureEffect.finish();
+    cgl.popShader();
+
+    trigger.trigger();
+};
+
+
+};
+
+Ops.Gl.ImageCompose.EdgeDetection_v4.prototype = new CABLES.Op();
+CABLES.OPS["0240e26e-b86d-43b2-8c72-6795bb86dc76"]={f:Ops.Gl.ImageCompose.EdgeDetection_v4,objName:"Ops.Gl.ImageCompose.EdgeDetection_v4"};
 
 
 
