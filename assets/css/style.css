@@ -1,0 +1,141 @@
+@font-face {
+  font-family: 'Posterman';
+  src: url(../../public/fonts/Posterman.otf);
+}
+
+body {
+  background: black;
+}
+
+/* note stylings */
+#note {
+  position: absolute;
+  /* transform: translateX(-50%); */
+  text-transform: uppercase;
+  color: white;
+  background: none;
+  width: 30%;
+  font-family: 'Posterman';
+  font-size: 23px;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  font-weight: 300;
+  left: 50%;
+  top: 15%;
+}
+
+/* end of note stylings */
+
+/* nav bar stylings */
+#nav-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+}
+
+#nav-wrapper .nav-box {
+  height: 50px;
+  min-width: 70px;
+  max-width: auto;
+  border: .1px solid white;
+  border-top: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+#nav-wrapper .nav-box p {
+  margin-top: -5px !important;
+  margin-bottom: 0px !important;
+  color: white;
+  text-transform: uppercase;
+  font-size: 18px;
+  font-family: 'Posterman';
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+/* end of nav bar stylings */
+
+
+/* title stylings */
+#title-wrapper {
+  position: absolute;
+  left: 35px;
+  bottom: 30px;
+  background-color: none;
+}
+
+#title-wrapper h1 {
+  color: white;
+  text-transform: uppercase;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+  font-family: 'Posterman';
+  line-height: .9;
+  font-size: 120px;
+  font-weight: 300;
+}
+
+/* end of title stylings */
+
+
+/* card element stylings */
+#card-element-wrapper {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 450px;
+  height: 220px;
+  color: white;
+  font-family: 'Posterman';
+  font-weight: 300;
+  letter-spacing: .5px;
+  border: .5px solid white;
+  border-bottom: none;
+  border-right: none;
+}
+
+#card-element-wrapper #text_1 {
+  position: absolute;
+  left: 20px;
+  top: 10px;
+}
+
+#card-element-wrapper #text_2 {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+}
+
+#card-element-wrapper #bottom-text {
+  position: absolute;
+  left: 20px;
+  bottom: 5%;
+  background: none;
+}
+
+#card-element-wrapper #bottom-text h3 {
+  margin-top: 0px !important;
+  margin-bottom: 20px !important;
+  line-height: 1;
+  font-size: 35px;
+}
+
+#card-element-wrapper #bottom-text a {
+  text-decoration: none;
+  color: white;
+}
+
+#card-element-wrapper img {
+  width: 35px;
+  height: 35px;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+
+/* end of card element stylings */
