@@ -7,6 +7,20 @@ body {
   background: black;
 }
 
+/* logo stylings */
+#logo {
+  position: absolute;
+  color: white;
+  left: 20px;
+  text-transform: uppercase;
+  font-family: 'Posterman';
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 1px;
+}
+
+/* end of logo stylings */
+
 /* note stylings */
 #note {
   position: absolute;
