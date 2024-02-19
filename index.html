@@ -6,11 +6,18 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./assets/css/style.css">
+
+  <!-- gsap lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <title>DRUMCODE RECORDS</title>
 </head>
 
 <body>
   <!-- loader -->
+  <div id="loader-wrapper">
+    <div class="block left-block"></div>
+    <div class="block right-block"></div>
+  </div>
 
   <!-- content -->
   <!-- logo -->
@@ -66,6 +73,9 @@
   </div>
 
   <!-- canvas -->
+
+  <!-- external scripts -->
+  <script type="module" src="./assets/js/loader.js"></script>
 </body>
 
 </html>

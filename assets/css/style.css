@@ -7,6 +7,24 @@ body {
   background: black;
 }
 
+/* loader stylings */
+.block {
+  position: absolute;
+  width: 50vw;
+  height: 100vh;
+  background: white;
+  top: 0;
+  z-index: 1000;
+}
+.left-block {
+  left: 0;
+}
+.right-block {
+  right: 0;
+}
+
+/* end of loader stylings */
+
 /* logo stylings */
 #logo {
   position: absolute;
@@ -53,7 +71,8 @@ body {
   min-width: 70px;
   max-width: auto;
   border: .1px solid white;
-  border-top: none;
+  border-top: none !important;
+  border-right: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
