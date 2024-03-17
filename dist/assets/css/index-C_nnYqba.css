@@ -170,6 +170,17 @@ body {
     bottom: 20px
 }
 
+#canvas-filter {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    background-color: rgb(0, 62, 93);
+    opacity: .25;    
+}
+
 #mobile-disclaime {
     display: none;
 }
