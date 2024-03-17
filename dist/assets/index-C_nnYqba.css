@@ -169,3 +169,34 @@ body {
     right: 20px;
     bottom: 20px
 }
+
+#mobile-disclaime {
+    display: none;
+}
+
+/* blocking on tab and mobile devices */
+@media screen and (max-width: 1024px) {
+    #content-wrapper {
+      display: none !important;
+    }
+
+    body {
+        background: black !important;
+    }
+
+    #mobile-disclaimer {
+        display: block !important;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        left: 50%;
+        top: 50%;
+        text-transform: uppercase;
+        z-index: 999;
+        color: white;
+        text-align: center;
+        font-family: "Posterman";
+        letter-spacing: 1px;
+        font-size: 18px;
+        width: 90%;
+    }
+}

@@ -24,62 +24,67 @@
   <div class="blurred-overlay" id="blurred-overlay"></div>
 
   <!-- content -->
-  <!-- logo -->
-  <span id="logo">drumcode records</span>
+  <div id="content-wrapper">
+    <!-- logo -->
+    <span id="logo">drumcode records</span>
 
-  <!-- note -->
-  <span id="note">
-    we explore sound exclusively, <br>
-    creating music that interwines <br>
-    with your soul, like an individual <br>
-    artistic experiment
-  </span>
+    <!-- note -->
+    <span id="note">
+      we explore sound exclusively, <br>
+      creating music that interwines <br>
+      with your soul, like an individual <br>
+      artistic experiment
+    </span>
 
-  <!-- nav area -->
-  <div id="nav-wrapper">
-    <div class="nav-box">
-      <p>index</p>
+    <!-- nav area -->
+    <div id="nav-wrapper">
+      <div class="nav-box">
+        <p>index</p>
+      </div>
+      <div class="nav-box">
+        <p>releases</p>
+      </div>
+      <div class="nav-box">
+        <p>events</p>
+      </div>
+      <div class="nav-box">
+        <p>artists</p>
+      </div>
+      <div class="nav-box">
+        <p>radio</p>
+      </div>
+      <div class="nav-box">
+        <p>store</p>
+      </div>
+      <div class="nav-box">
+        <p>contact</p>
+      </div>
     </div>
-    <div class="nav-box">
-      <p>releases</p>
+
+    <!-- title -->
+    <div id="title-wrapper">
+      <h1>drumcode <br> records</h1>
     </div>
-    <div class="nav-box">
-      <p>events</p>
+
+    <!-- card element -->
+    <div id="card-element-wrapper">
+      <span id="text_1">latest release</span>
+      <span id="text_2">available on all platforms</span>
+      <div id="bottom-text">
+        <h3>marco farone: <br> emergency</h3>
+        <a href="">listen now</a>
+      </div>
+      <img src="/images/arrow_icon.png" alt="">
     </div>
-    <div class="nav-box">
-      <p>artists</p>
-    </div>
-    <div class="nav-box">
-      <p>radio</p>
-    </div>
-    <div class="nav-box">
-      <p>store</p>
-    </div>
-    <div class="nav-box">
-      <p>contact</p>
-    </div>
+
+    <!-- canvas -->
+    <div id="canvas-filter"></div>
+    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
   </div>
+  <!-- end of content -->
 
-  <!-- title -->
-  <div id="title-wrapper">
-    <h1>drumcode <br> records</h1>
-  </div>
-
-  <!-- card element -->
-  <div id="card-element-wrapper">
-    <span id="text_1">latest release</span>
-    <span id="text_2">available on all platforms</span>
-    <div id="bottom-text">
-      <h3>marco farone: <br> emergency</h3>
-      <a href="">listen now</a>
-    </div>
-    <img src="/images/arrow_icon.png" alt="">
-  </div>
-
-  <!-- canvas -->
-  <div id="canvas-filter"></div>
-  <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
-
+  <!-- mobile device disclaimer -->
+  <p id="mobile-disclaimer">Mobile & Tablet preview is not available for this website, try it on a laptop or a wider screen</p>
 
   <!-- external scripts for cables.gl -->
   <script type="text/javascript" src="./assets/js/libs.core.min.js"></script>
