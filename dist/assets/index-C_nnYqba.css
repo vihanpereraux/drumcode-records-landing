@@ -1,14 +1,52 @@
 @font-face {
     font-family: Posterman;
-    src: url(/assets/Posterman.otf)
+    src: url(/assets/Posterman-By_CFKkH.otf)
 }
 
-body,
-html {
+body {
     margin: 0;
-    background: black !important;
+    background: #000 !important;
     overflow-y: hidden;
-    overflow-x: hidden;
+    overflow-x: hidden
+}
+
+.block {
+    position: absolute;
+    width: 50vw;
+    height: 100vh;
+    background: #fff;
+    top: 0;
+    z-index: 1000 !important;
+}
+
+.left-block {
+    left: 0
+}
+
+.right-block {
+    right: 0
+}
+
+#blurred-overlay {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 0 !important;
+    backdrop-filter: blur(15px);
+}
+
+#logo {
+    position: absolute;
+    color: #fff;
+    left: 20px;
+    top: 10px;
+    text-transform: uppercase;
+    font-family: Posterman;
+    font-size: 15px;
+    line-height: 1.2;
+    letter-spacing: 1px
 }
 
 #note {
@@ -37,8 +75,9 @@ html {
     height: 50px;
     min-width: 70px;
     max-width: auto;
-    border: .1px solid white !important;
+    border: .1px solid white;
     border-top: none !important;
+    border-right: none !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -129,31 +168,4 @@ html {
     position: absolute;
     right: 20px;
     bottom: 20px
-}
-
-canvas {
-    display: block;
-    position: absolute;
-    top: 0;
-    z-index: -2;
-}
-#canvas-filter {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgb(33, 55, 1);
-    z-index: -1;
-    opacity: .25;
-}
-
-* {
-    /* disable on touch highlights of html elements, especially on mobile! */
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }

@@ -5,16 +5,27 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- gsap lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <title>DRUMCODE RECORDS</title>
-  <link rel="stylesheet" crossorigin href="/assets/index-Yw5YrLMX.css">
+  <script type="module" crossorigin src="./assets/index-DlSrRxvE.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C_nnYqba.css">
 </head>
 
 <body>
   <!-- loader -->
+  <div id="loader-wrapper">
+    <div class="block left-block"></div>
+    <div class="block right-block"></div>
+  </div>
+
+  <!-- blurred overlay -->
+  <div class="blurred-overlay" id="blurred-overlay"></div>
 
   <!-- content -->
   <!-- logo -->
-  <!-- <img src="" alt=""> -->
+  <span id="logo">drumcode records</span>
 
   <!-- note -->
   <span id="note">
@@ -68,6 +79,7 @@
   <!-- canvas -->
   <div id="canvas-filter"></div>
   <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+
 
   <!-- external scripts for cables.gl -->
   <script type="text/javascript" src="./assets/js/libs.core.min.js"></script>

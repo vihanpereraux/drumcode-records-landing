@@ -4,7 +4,10 @@
 }
 
 body {
-  background: black;
+  margin: 0;
+  background: black !important;
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 /* loader stylings */
@@ -16,20 +19,37 @@ body {
   top: 0;
   z-index: 1000;
 }
+
 .left-block {
   left: 0;
 }
+
 .right-block {
   right: 0;
 }
 
 /* end of loader stylings */
 
+/* bluured overlay stylings */
+#blurred-overlay {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 1001;
+  filter: blur(100px);
+  background-color: white;
+}
+
+/* enf of bluured overlay stylings */
+
 /* logo stylings */
 #logo {
   position: absolute;
   color: white;
   left: 20px;
+  top: 10px;
   text-transform: uppercase;
   font-family: 'Posterman';
   font-size: 15px;
